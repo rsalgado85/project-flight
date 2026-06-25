@@ -97,17 +97,19 @@ const DEFAULT_BOUNDS: MapBounds = {
 
 // --- FlightMap Component ---
 interface FlightMapProps {
+  flights?: FlightState[];
   initialBounds?: MapBounds;
   className?: string;
   onAircraftSelect?: (aircraft: FlightState) => void;
 }
 
-function FlightMap({ initialBounds = DEFAULT_BOUNDS, className = '' }: FlightMapProps) {
+function FlightMap({ flights: externalFlights, initialBounds = DEFAULT_BOUNDS, className = '' }: FlightMapProps) {
   const [bounds, setBounds] = useState<MapBounds>(initialBounds);
   const [activeLayer, setActiveLayer] = useState<TileLayerKey>('dark');
 
-  // Fetch flights in current bounds
-  const { data: flights = [] } = useFlightsByBbox(bounds);
+  // Use external flights if provided, otherwise fetch by bounds
+  const { data: fetchedFlights = [] } = useFlightsByBbox(externalFlights ? null : bounds);
+  const flights = externalFlights ?? fetchedFlights;
 
   // Center from initial bounds
   const center = useMemo<L.LatLngTuple>(

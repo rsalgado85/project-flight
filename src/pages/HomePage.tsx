@@ -123,6 +123,7 @@ export const HomePage: FC = () => {
             }
           >
             <FlightMap
+              flights={allFlights as FlightState[]}
               onAircraftSelect={handleAircraftSelect}
               className="w-full h-full"
             />
