@@ -82,12 +82,12 @@ export async function fetchAdsbFlights(lamin: number, lomin: number, lamax: numb
     // Use the point API with a large radius to get broad coverage
     const centerLat = (lamin + lamax) / 2;
     const centerLon = (lomin + lomax) / 2;
-    // Rough radius calculation
-    const radiusNm = Math.max(
+    // Rough radius calculation, capped at 500nm to avoid API timeout
+    const radiusNm = Math.min(500, Math.max(
       Math.abs(lamax - lamin) * 60,
       Math.abs(lomax - lomin) * 60 * Math.cos((centerLat * Math.PI) / 180),
       100
-    );
+    ));
 
     const response = await axios.get<AdsbResponse>(
       `${ADSB_BASE}/point/${centerLat}/${centerLon}/${Math.round(radiusNm)}`,
@@ -111,11 +111,11 @@ export async function fetchAdsbFlights(lamin: number, lomin: number, lamax: numb
 
 /**
  * Fetch flights covering a broad region (Europe + Atlantic).
- * For all-flights query.
+ * For all-flights query. Uses a reasonable radius to avoid timeout.
  */
 export async function fetchAdsbAll(): Promise<FlightState[]> {
-  // Cover Europe/North Atlantic region broadly
-  return fetchAdsbFlights(25, -130, 72, 45);
+  // Cover Europe/North Atlantic region
+  return fetchAdsbFlights(30, -130, 60, 40);
 }
 
 /**
