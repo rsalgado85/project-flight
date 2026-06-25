@@ -3,27 +3,57 @@ import type { FlightState } from '@/types/flight';
 
 const ADSB_BASE = '/api/adsb';
 
-/**
- * Normalize ADSB.lol aircraft data to FlightState format.
- * ADSB.lol returns a different schema so we map fields.
- */
 interface AdsbAircraft {
   hex?: string;
   flight?: string;
-  alt_baro?: number;
+  r?: string;        // registration
+  t?: string;        // aircraft type (e.g. A320, B738)
+  alt_baro?: number | 'ground';
   alt_geom?: number;
-  gs?: number;
-  track?: number;
+  gs?: number;       // ground speed (knots)
+  track?: number;    // true track
   baro_rate?: number;
+  geom_rate?: number;
   lat?: number;
   lon?: number;
   seen_pos?: number;
   seen?: number;
   squawk?: string;
+  emergency?: string;
+  category?: string;
+  true_heading?: number;
+  mag_heading?: number;
+  mach?: number;
+  ias?: number;
+  tas?: number;
+  wd?: number;       // wind direction
+  ws?: number;       // wind speed
+  oat?: number;      // outside air temp
+  tat?: number;      // total air temp
+  nac_p?: number;
+  nac_v?: number;
+  sil?: number;
+  gva?: number;
+  sda?: number;
+  alert?: number;
+  spi?: number;
+  version?: number;
+  messages?: number;
+  rssi?: number;
+}
+
+interface AdsbResponse {
+  ac?: AdsbAircraft[];
+  msg?: string;
+  now?: number;
+  total?: number;
 }
 
 function normalizeAdsb(aircraft: AdsbAircraft): FlightState | null {
   if (!aircraft.hex || aircraft.lat == null || aircraft.lon == null) return null;
+
+  const altBaro = aircraft.alt_baro === 'ground' ? 0 : (aircraft.alt_baro ?? 0);
+
   return {
     icao24: aircraft.hex,
     callsign: aircraft.flight?.trim() ?? '',
@@ -32,28 +62,35 @@ function normalizeAdsb(aircraft: AdsbAircraft): FlightState | null {
     last_contact: aircraft.seen ?? 0,
     longitude: aircraft.lon,
     latitude: aircraft.lat,
-    baro_altitude: aircraft.alt_baro ?? 0,
+    baro_altitude: altBaro,
     geo_altitude: aircraft.alt_geom ?? 0,
     velocity: aircraft.gs ?? 0,
     true_track: aircraft.track ?? 0,
     vertical_rate: aircraft.baro_rate ?? 0,
-    on_ground: false,
+    on_ground: aircraft.alt_baro === 'ground',
     squawk: aircraft.squawk ?? '',
     position_source: 1,
   };
 }
 
 /**
- * Fetch aircraft from ADSB.lol as fallback.
- * Uses the sample endpoint (point/.../250) which returns up to 250 nearby aircraft.
- * We use 0/0 (null island) as center and a large radius to get global-ish coverage.
+ * Fetch aircraft from ADSB.lol by bounding box.
+ * This is the PRIMARY flight data source.
  */
-export async function fetchFromAdsbLol(): Promise<FlightState[]> {
+export async function fetchAdsbFlights(lamin: number, lomin: number, lamax: number, lomax: number): Promise<FlightState[]> {
   try {
-    // ADSB.lol v2 point endpoint: /point/{lat}/{lon}/{radius_nm}
-    // Using 0,0 with max radius for global sample
-    const response = await axios.get<{ ac?: AdsbAircraft[] }>(
-      `${ADSB_BASE}/point/0/0/250`,
+    // Use the point API with a large radius to get broad coverage
+    const centerLat = (lamin + lamax) / 2;
+    const centerLon = (lomin + lomax) / 2;
+    // Rough radius calculation
+    const radiusNm = Math.max(
+      Math.abs(lamax - lamin) * 60,
+      Math.abs(lomax - lomin) * 60 * Math.cos((centerLat * Math.PI) / 180),
+      100
+    );
+
+    const response = await axios.get<AdsbResponse>(
+      `${ADSB_BASE}/point/${centerLat}/${centerLon}/${Math.round(radiusNm)}`,
       { timeout: 15000 }
     );
 
@@ -67,27 +104,34 @@ export async function fetchFromAdsbLol(): Promise<FlightState[]> {
     }
     return states;
   } catch (error) {
-    console.error('[ADSB.lol] fetchFromAdsbLol failed:', error);
+    console.error('[ADSB.lol] fetchAdsbFlights failed:', error);
     return [];
   }
 }
 
 /**
- * Fetch flights with automatic fallback to ADSB.lol if OpenSky fails.
- * This is the recommended aggregated fetch function.
+ * Fetch flights covering a broad region (Europe + Atlantic).
+ * For all-flights query.
  */
-export async function fetchFlightsWithFallback(
-  primaryFetcher: () => Promise<FlightState[]>
-): Promise<FlightState[]> {
-  try {
-    const result = await primaryFetcher();
-    if (result.length > 0) return result;
+export async function fetchAdsbAll(): Promise<FlightState[]> {
+  // Cover Europe/North Atlantic region broadly
+  return fetchAdsbFlights(25, -130, 72, 45);
+}
 
-    // OpenSky returned empty — try ADSB.lol
-    console.log('[Aggregator] Primary source empty, falling back to ADSB.lol');
-    return await fetchFromAdsbLol();
-  } catch (error) {
-    console.error('[Aggregator] Primary source failed, falling back to ADSB.lol:', error);
-    return await fetchFromAdsbLol();
+/**
+ * Fetch single aircraft by ICAO24.
+ */
+export async function fetchAdsbByIcao(icao24: string): Promise<FlightState | null> {
+  try {
+    const response = await axios.get<AdsbAircraft>(
+      `${ADSB_BASE}/hex/${icao24}`,
+      { timeout: 10000 }
+    );
+    return normalizeAdsb(response.data);
+  } catch {
+    return null;
   }
 }
+
+// Re-export for backward compatibility
+export { fetchAdsbAll as fetchFromAdsbLol };

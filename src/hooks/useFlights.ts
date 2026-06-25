@@ -1,42 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchAllFlights, fetchFlightsInBounds, fetchFlightByIcao } from '@/services/opensky';
-import { fetchFromAdsbLol } from '@/services/adsb';
+import { fetchAdsbAll, fetchAdsbFlights, fetchAdsbByIcao } from '@/services/adsb';
 import type { FlightState, MapBounds } from '@/types/flight';
 
 /**
- * TanStack Query hook: fetches all flights with 15s refetch interval.
- * Falls back to ADSB.lol if OpenSky returns empty.
+ * Fetch all flights (broad region).
+ * Uses ADSB.lol — primary source with 15s refresh.
  */
 export function useFlights() {
   return useQuery<FlightState[]>({
     queryKey: ['flights', 'all'],
-    queryFn: async () => {
-      const flights = await fetchAllFlights();
-      if (flights.length > 0) return flights;
-      // Fallback to ADSB.lol
-      console.log('[useFlights] OpenSky empty, falling back to ADSB.lol');
-      return fetchFromAdsbLol();
-    },
-    refetchInterval: 15000, // 15 seconds
-    staleTime: 10000,       // 10 seconds
+    queryFn: fetchAdsbAll,
+    refetchInterval: 15000,
+    staleTime: 10000,
     retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 10000),
   });
 }
 
 /**
- * TanStack Query hook: fetches flights within a bounding box.
+ * Fetch flights within a bounding box.
+ * Uses ADSB.lol point API centered on the bounds.
  */
 export function useFlightsByBbox(bounds: MapBounds | null) {
   return useQuery<FlightState[]>({
     queryKey: ['flights', 'bbox', bounds],
     queryFn: async () => {
       if (!bounds) return [];
-      const flights = await fetchFlightsInBounds(bounds);
-      if (flights.length > 0) return flights;
-      // Fallback to ADSB.lol
-      console.log('[useFlightsByBbox] OpenSky empty, falling back to ADSB.lol');
-      return fetchFromAdsbLol();
+      return fetchAdsbFlights(bounds.lamin, bounds.lomin, bounds.lamax, bounds.lomax);
     },
     refetchInterval: 15000,
     staleTime: 10000,
@@ -46,12 +35,12 @@ export function useFlightsByBbox(bounds: MapBounds | null) {
 }
 
 /**
- * TanStack Query hook: fetch single aircraft by ICAO24.
+ * Fetch single aircraft by ICAO24.
  */
 export function useFlightByIcao(icao24: string | null) {
   return useQuery<FlightState | null>({
     queryKey: ['flight', 'icao', icao24],
-    queryFn: () => fetchFlightByIcao(icao24!),
+    queryFn: () => fetchAdsbByIcao(icao24!),
     enabled: !!icao24,
     refetchInterval: 15000,
     staleTime: 10000,
