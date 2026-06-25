@@ -91,8 +91,14 @@ export async function fetchAdsbFlights(lamin: number, lomin: number, lamax: numb
 
     const response = await axios.get<AdsbResponse>(
       `${ADSB_BASE}/point/${centerLat}/${centerLon}/${Math.round(radiusNm)}`,
-      { timeout: 15000 }
+      { timeout: 10000, validateStatus: (s) => s < 500 }
     );
+
+    // Handle rate limiting gracefully
+    if (response.status === 429 || response.status === 420) {
+      console.warn(`[ADSB.lol] Rate limited (${response.status}), returning empty`);
+      return [];
+    }
 
     const aircraft = response.data?.ac;
     if (!aircraft || !Array.isArray(aircraft)) return [];

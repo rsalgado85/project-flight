@@ -4,21 +4,20 @@ import type { FlightState, MapBounds } from '@/types/flight';
 
 /**
  * Fetch all flights (broad region).
- * Uses ADSB.lol — primary source with 15s refresh.
+ * 60s refresh to avoid ADSB.lol rate limiting.
  */
 export function useFlights() {
   return useQuery<FlightState[]>({
     queryKey: ['flights', 'all'],
     queryFn: fetchAdsbAll,
-    refetchInterval: 15000,
-    staleTime: 10000,
-    retry: 2,
+    refetchInterval: 60000,
+    staleTime: 30000,
+    retry: 1,
   });
 }
 
 /**
  * Fetch flights within a bounding box.
- * Uses ADSB.lol point API centered on the bounds.
  */
 export function useFlightsByBbox(bounds: MapBounds | null) {
   return useQuery<FlightState[]>({
@@ -27,10 +26,10 @@ export function useFlightsByBbox(bounds: MapBounds | null) {
       if (!bounds) return [];
       return fetchAdsbFlights(bounds.lamin, bounds.lomin, bounds.lamax, bounds.lomax);
     },
-    refetchInterval: 15000,
-    staleTime: 10000,
+    refetchInterval: 60000,
+    staleTime: 30000,
     enabled: !!bounds,
-    retry: 2,
+    retry: 1,
   });
 }
 
@@ -42,8 +41,8 @@ export function useFlightByIcao(icao24: string | null) {
     queryKey: ['flight', 'icao', icao24],
     queryFn: () => fetchAdsbByIcao(icao24!),
     enabled: !!icao24,
-    refetchInterval: 15000,
-    staleTime: 10000,
+    refetchInterval: 60000,
+    staleTime: 30000,
     retry: 1,
   });
 }
