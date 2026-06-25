@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAppStore } from '@/store/useAppStore';
@@ -44,11 +44,23 @@ function PageLoader() {
 function App() {
   const theme = useAppStore((s) => s.theme);
 
+  // Apply theme class to <html> for CSS variable scoping
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.classList.add('light');
+      root.classList.remove('dark');
+    } else {
+      root.classList.add('dark');
+      root.classList.remove('light');
+    }
+  }, [theme]);
+
   return (
     <LanguageProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <div className={`${theme} flex min-h-screen bg-gray-950`}>
+          <div className="flex min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
             {/* Desktop sidebar */}
             <Sidebar />
 

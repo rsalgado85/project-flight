@@ -1,3 +1,8 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/opensky/(.*)", "destination": "https://opensky-network.org/api/$1" },
+    { "source": "/api/adsb/(.*)", "destination": "https://api.adsb.lol/v2/$1" },
+    { "source": "/api/airports/(.*)", "destination": "https://davidmegginson.github.io/ourairports-data/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

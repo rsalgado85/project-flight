@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { FlightState } from '@/types/flight';
 import { normalizeFlightState, hasValidPosition, type MapBounds } from '@/types/flight';
 
-const OPENSKY_BASE = 'https://opensky-network.org/api';
+const OPENSKY_BASE = '/api/opensky';
 const REQUEST_TIMEOUT = 15000; // 15s
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000; // 1s

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { FlightState } from '@/types/flight';
 
-const ADSB_BASE = 'https://api.adsb.lol/v2';
+const ADSB_BASE = '/api/adsb';
 
 /**
  * Normalize ADSB.lol aircraft data to FlightState format.

@@ -122,3 +122,50 @@ body {
 .safe-area-inset-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ═══ Light Mode ═══ */
+.light {
+  --color-bg: #f1f5f9;
+  --color-surface: #ffffff;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-accent-glow: rgba(0, 150, 200, 0.12);
+}
+
+.light body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.light .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-border);
+}
+
+.light .glass-strong {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--color-border);
+}
+
+.light .glass-card {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.light .glass-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light .leaflet-container {
+  background: #e2e8f0 !important;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Airport } from '@/types/flight';
 
-const AIRPORTS_URL = 'https://davidmegginson.github.io/ourairports-data/airports.json';
+const AIRPORTS_URL = '/api/airports/airports.json';
 const CACHE_KEY = 'ourairports_cache';
 const CACHE_TIMESTAMP_KEY = 'ourairports_cache_ts';
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in ms
